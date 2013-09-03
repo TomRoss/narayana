@@ -390,10 +390,8 @@
     <!--<version.jacorb>2.3.1jboss.patch01-brew</version.jacorb>-->
     <version.javax.annotation>1.2</version.javax.annotation>
     <version.commons-transaction>1.2</version.commons-transaction>
-    <version.javax.transaction>1.1</version.javax.transaction>
     <version.javax.enterprise>1.0-SP4</version.javax.enterprise>
     <version.javax.inject>1</version.javax.inject>
-    <version.javax.servlet>2.5</version.javax.servlet>
     <version.commons-codec>1.4</version.commons-codec>
     <version.commons-httpclient>3.1-jbossorg-1</version.commons-httpclient>
     <version.log4j>1.2.15</version.log4j>

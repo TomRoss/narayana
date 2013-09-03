@@ -64,9 +64,9 @@
 	<dependencies>
 		<!-- javax.transaction.* -->
 		<dependency>
-			<groupId>javax.transaction</groupId>
-			<artifactId>jta</artifactId>
-			<version>${version.javax.transaction}</version>
+			<groupId>org.jboss.spec.javax.transaction</groupId>
+			<artifactId>jboss-transaction-api_1.1_spec</artifactId>
+			<version>${version.org.jboss.spec.javax.transaction}</version>
 		</dependency>
 		<!-- jboss jta -->
 		<dependency>
