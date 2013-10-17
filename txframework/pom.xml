@@ -193,18 +193,6 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                            <systemPropertyVariables combine.children="append">
-                                <!--
-                                    Used in arquillian.xml
-                                -->
-                                <server.jvm.args>${jvm.args.debug}</server.jvm.args>
-                            </systemPropertyVariables>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.7.2</version>
-                        <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables combine.children="append">
                                 <!--
