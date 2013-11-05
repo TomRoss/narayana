@@ -130,6 +130,7 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+              <createSourcesJar>true</createSourcesJar>
               <shadedClassifierName>api</shadedClassifierName>
               <shadedArtifactAttached>true</shadedArtifactAttached>
               <createDependencyReducedPom>true</createDependencyReducedPom>
@@ -151,6 +152,7 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+              <createSourcesJar>true</createSourcesJar>
               <createDependencyReducedPom>true</createDependencyReducedPom>
               <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
               <artifactSet>
