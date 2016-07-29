@@ -8,7 +8,7 @@
 	<parent>
 		<groupId>org.jboss.jbossts.xts</groupId>
 		<artifactId>localjunit</artifactId>
-		<version>4.17.35.Final-SNAPSHOT</version>
+		<version>4.17.34.Final-bz1360648</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
