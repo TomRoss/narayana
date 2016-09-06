@@ -37,6 +37,8 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
+import com.arjuna.ats.arjuna.common.Uid;
+import com.arjuna.ats.jta.xa.XidImple;
 import org.jboss.tm.ExtendedJBossXATerminator;
 import org.jboss.tm.JBossXATerminator;
 import org.jboss.tm.TransactionTimeoutConfiguration;
@@ -229,31 +231,25 @@ public class ServerImpl implements LocalServer {
 	public Xid locateOrImportTransactionThenResumeIt(int remainingTimeout, Xid toResume) throws XAException, IllegalStateException, SystemException,
 			IOException {
 		Xid toReturn = null;
-		Transaction transaction = rootTransactionsAsSubordinate.get(new SubordinateXidImple(toResume));
+
+		JBossXATerminator xaTerminator = transactionManagerService.getJbossXATerminator();
+
+		if (!ExtendedJBossXATerminator.class.isInstance(xaTerminator)) {
+			System.out.printf("ExtendedJBossXATerminator: FAIL not an instance");
+			return null;
+		}
+
+		ExtendedJBossXATerminator extendedJBossXATerminator = (ExtendedJBossXATerminator) xaTerminator;
+		Transaction transaction = extendedJBossXATerminator.getTransaction(toResume);
+
 		if (transaction == null) {
-			transaction = SubordinationManager.getTransactionImporter().getImportedTransaction(toResume);
-			if (transaction == null) {
-				transaction = SubordinationManager.getTransactionImporter().importTransaction(toResume, remainingTimeout);
-				toReturn = ((TransactionImple) transaction).getTxId();
-			}
-
-			JBossXATerminator xaTerminator = transactionManagerService.getJbossXATerminator();
-
-			if (!ExtendedJBossXATerminator.class.isInstance(xaTerminator)) {
-				System.out.printf("ExtendedJBossXATerminator: FAIL not an instance");
-			} else {
-				ExtendedJBossXATerminator extendedJBossXATerminator = (ExtendedJBossXATerminator) xaTerminator;
-				Transaction tx = extendedJBossXATerminator.getTransaction(toResume);
-				if (tx == null)
-					System.out.printf("ExtendedJBossXATerminator: FAIL missing tx");
-			}
-
-//		assertTrue(ExtendedJBossXATerminator.class.isInstance(xaTerminator));
-//		ExtendedJBossXATerminator extendedJBossXATerminator = (ExtendedJBossXATerminator) xaTerminator;
-//		assertTrue(extendedJBossXATerminator.getTransaction(toResume) != null);
+			// there is no such imported transaction so create one and associate with the toResume Xid
+			transaction = SubordinationManager.getTransactionImporter().importTransaction(toResume, remainingTimeout);
+			toReturn = ((TransactionImple) transaction).getTxId();
 		}
 
 		transactionManagerService.getTransactionManager().resume(transaction);
+
 		return toReturn;
 	}
 
