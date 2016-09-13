@@ -38,9 +38,11 @@ import javax.transaction.xa.Xid;
 
 import com.arjuna.ats.arjuna.common.Uid;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateTransaction;
+import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.SubordinateXidImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.jca.TransactionImporter;
 import com.arjuna.ats.internal.jta.transaction.jts.subordinate.jca.TransactionImple;
 import com.arjuna.ats.jta.xa.XidImple;
+import org.jboss.tm.TransactionImportResult;
 
 public class TransactionImporterImple implements TransactionImporter
 {
@@ -59,7 +61,7 @@ public class TransactionImporterImple implements TransactionImporter
 	
 	public SubordinateTransaction importTransaction (Xid xid) throws XAException
 	{
-		return importTransaction(xid, 0);
+		return (SubordinateTransaction) importTransaction(xid, 0).getTransaction();
 	}
 
 	/**
@@ -74,7 +76,7 @@ public class TransactionImporterImple implements TransactionImporter
 	 * @throws XAException thrown if there are any errors.
 	 */
 	
-	public SubordinateTransaction importTransaction (Xid xid, int timeout) throws XAException
+	public TransactionImportResult importTransaction (Xid xid, int timeout) throws XAException
 	{
 		if (xid == null)
 			throw new IllegalArgumentException();
@@ -111,12 +113,8 @@ public class TransactionImporterImple implements TransactionImporter
 		{
 			recovered.recordTransaction();
 
-			_transactions.put(recovered.baseXid(), recovered);
-			
-			return recovered;
-		}
-		else
-			return tx;
+		return (SubordinateTransaction) addImportedTransaction(recovered, recovered.baseXid(), null, 0).getTransaction();
+
 	}
     
 	/**
@@ -170,7 +168,55 @@ public class TransactionImporterImple implements TransactionImporter
 
 		_transactions.remove(new XidImple(xid));
 	}
-	
-	private static ConcurrentHashMap<Xid, SubordinateTransaction> _transactions = new ConcurrentHashMap<Xid, SubordinateTransaction>();
-	
+
+	/**
+	 * This can be used for newly imported transactions or recovered ones.
+	 *
+	 * @param recoveredTransaction If this is recovery
+	 * @param xid if this is import
+	 * @param timeout
+	 * @return
+	 */
+	private TransactionImportResult addImportedTransaction(TransactionImple recoveredTransaction, Xid mapKey, Xid xid, int timeout) {
+		TransactionImportResult toReturn = new TransactionImportResult();
+		SubordinateXidImple importedXid = new SubordinateXidImple(mapKey);
+		// We need to store the imported transaction in a volatile field holder so that it can be shared between threads
+		AtomicReference<SubordinateTransaction> holder = new AtomicReference<>();
+		AtomicReference<SubordinateTransaction> existing;
+
+		if ((existing = _transactions.putIfAbsent(importedXid, holder)) != null) {
+			holder = existing;
+		}
+
+		SubordinateTransaction txn = holder.get();
+
+		// Should only be called by the recovery system - this will replace the Transaction with one from disk
+		if (recoveredTransaction!= null) {
+			synchronized (holder) {
+				// now it's safe to add the imported transaction to the holder
+				recoveredTransaction.recordTransaction();
+				txn = recoveredTransaction;
+				holder.set(txn);
+			}
+		}
+
+		if (txn == null) {
+			// retry the get under a lock - this double check idiom is safe because AtomicReference is effectively
+			// a volatile so can be concurrently accessed by multiple threads
+			synchronized (holder) {
+				txn = holder.get();
+				if (txn == null) {
+					txn = new TransactionImple(timeout, xid);
+					holder.set(txn);
+					toReturn.setSubordinateCreated(true);
+				}
+			}
+		}
+
+		toReturn.setTransaction(txn);
+		return toReturn;
+	}
+
+	private static ConcurrentHashMap<Xid, AtomicReference<SubordinateTransaction>> _transactions = new ConcurrentHashMap<>();
+
 }
