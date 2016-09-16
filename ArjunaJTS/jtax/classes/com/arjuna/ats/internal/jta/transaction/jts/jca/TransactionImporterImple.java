@@ -80,21 +80,9 @@ public class TransactionImporterImple implements TransactionImporter
 	{
 		if (xid == null)
 			throw new IllegalArgumentException();
-		
-		/*
-		 * Check to see if we haven't already imported this thing.
-		 */
-		
-		SubordinateTransaction imported = getImportedTransaction(xid);
-		
-		if (imported == null)
-		{	
-			imported = new TransactionImple(timeout, xid);
-			
-			_transactions.put(new XidImple(xid), imported);
-		}
-		
-		return imported;
+
+		return addImportedTransaction(null, new SubordinateXidImple(xid), xid, timeout);
+
 	}
 
 	public SubordinateTransaction recoverTransaction (Uid actId) throws XAException
@@ -109,10 +97,9 @@ public class TransactionImporterImple implements TransactionImporter
 		
 		TransactionImple tx = (TransactionImple) _transactions.get(recovered.baseXid());
 
-		if (tx == null)
-		{
+		if (tx == null) {
 			recovered.recordTransaction();
-
+		}
 		return (SubordinateTransaction) addImportedTransaction(recovered, recovered.baseXid(), null, 0).getTransaction();
 
 	}
@@ -133,12 +120,21 @@ public class TransactionImporterImple implements TransactionImporter
 	{
 		if (xid == null)
 			throw new IllegalArgumentException();
-		
-		SubordinateTransaction tx = _transactions.get(new XidImple(xid));
-		
-		if (tx == null)
-			return null;
 
+		AtomicReference<SubordinateTransaction> holder = _transactions.get(new SubordinateXidImple(xid));
+		SubordinateTransaction tx = holder == null ? null : holder.get();
+
+		if (tx == null) {
+			/*
+			 * Remark: if holder != null and holder.get() == null then the setter is about to
+			 * import the transaction but has not yet updated the holder. We implement the getter
+			 * (the thing that is trying to terminate the imported transaction) as though the imported
+			 * transaction only becomes observable when it has been fully imported.
+			 */
+
+			return null;
+		}
+		
 		if (tx.baseXid() == null)
 		{
 			/*
@@ -166,7 +162,7 @@ public class TransactionImporterImple implements TransactionImporter
 		if (xid == null)
 			throw new IllegalArgumentException();
 
-		_transactions.remove(new XidImple(xid));
+		_transactions.remove(new SubordinateXidImple(xid));
 	}
 
 	/**
