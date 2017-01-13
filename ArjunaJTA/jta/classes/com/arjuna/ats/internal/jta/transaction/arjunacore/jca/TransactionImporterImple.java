@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
@@ -234,7 +235,7 @@ public class TransactionImporterImple implements TransactionImporter
 		boolean isNew = false;
 		SubordinateXidImple importedXid = new SubordinateXidImple(mapKey);
 		// We need to store the imported transaction in a volatile field holder so that it can be shared between threads
-		AtomicReference<TransactionImple> holder = new AtomicReference<>();
+		AtomicReference<TransactionImple> holder = new AtomicReference<TransactionImple>();
 		AtomicReference<TransactionImple> existing;
 
 		if ((existing = _transactions.putIfAbsent(importedXid, holder)) != null) {
@@ -281,7 +282,7 @@ public class TransactionImporterImple implements TransactionImporter
 	}
 
 	private static ConcurrentHashMap<SubordinateXidImple, AtomicReference<TransactionImple>> _transactions =
-			new ConcurrentHashMap<>();
+			new ConcurrentHashMap<SubordinateXidImple, AtomicReference<TransactionImple>>();
 
 }
 
