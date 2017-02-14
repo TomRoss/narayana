@@ -1032,6 +1032,16 @@ public class TransactionImple implements javax.transaction.Transaction,
 	    
 	    return res;
 	}
+
+	/**
+	 * Returning list of throwables which are bound to transaction failure.
+	 * This method is intended to be used when handling some error states.
+	 * The result exception could be enriched by these throwables as a cause.
+	 */
+	public List<Throwable> getDeferredThrowables()
+	{
+	    return _theTransaction.getDeferredThrowables();
+	}
 	
 	public String toString()
 	{
